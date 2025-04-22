@@ -11,8 +11,8 @@ find_package(imgui QUIET)
 if (NOT imgui_FOUND)
     FetchContent_Declare(
         imgui
-        URL      https://github.com/ocornut/imgui/archive/refs/heads/master.zip
-        URL_HASH MD5=cc306a442c28bc853615eb9579292130
+        URL      https://github.com/ocornut/imgui/archive/refs/tags/v1.91.9b.zip
+        URL_HASH MD5=913db10a6ef52623b118142aafba7438
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     FetchContent_MakeAvailable(imgui)
@@ -41,8 +41,8 @@ find_package(raylib QUIET)
 if (NOT raylib_FOUND)
     FetchContent_Declare(
         raylib
-        URL      https://github.com/raysan5/raylib/archive/refs/heads/master.zip
-        URL_HASH MD5=cbb82e5c9beca98fd27787821e7c0cf2
+        URL      https://github.com/raysan5/raylib/archive/refs/tags/5.5.zip
+        URL_HASH MD5=fa441b96a43796cd4b0ee2c7150e1d56
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     FetchContent_MakeAvailable(raylib)
