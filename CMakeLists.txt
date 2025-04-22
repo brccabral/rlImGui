@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.23)
 project(rlImGui VERSION 0.1.0)
 
 option(BUILD_EXAMPLES "Build examples" OFF)
+option(NO_FONT_AWESOME "Do not use Font Awesome" OFF)
 
 include(FetchContent)
+include(GNUInstallDirs)
 
 find_package(imgui QUIET)
 if (NOT imgui_FOUND)
@@ -58,11 +60,33 @@ target_sources(rlImGui
 target_link_libraries(rlImGui PUBLIC imgui::imgui raylib)
 
 set_target_properties(rlImGui PROPERTIES EXPORT_NAME "rlImGui")
-install(TARGETS rlImGui
-        EXPORT rlImGuiTargets
-        ARCHIVE DESTINATION lib
-        FILE_SET HEADERS DESTINATION include
-)
+
+if (NO_FONT_AWESOME)
+    target_compile_options(rlImGui PUBLIC "-DNO_FONT_AWESOME")
+    set(NO_FONT_AWESOME_CONFIG "add_compile_options(\"-DNO_FONT_AWESOME\")")
+    install(TARGETS rlImGui
+            EXPORT rlImGuiTargets
+            ARCHIVE DESTINATION lib
+            FILE_SET HEADERS DESTINATION include
+    )
+else ()
+    set(NO_FONT_AWESOME_CONFIG "")
+    target_sources(rlImGui
+        PUBLIC
+            FILE_SET rlImGui_config
+               TYPE HEADERS
+               FILES extras/IconsFontAwesome6.h extras/FA6FreeSolidFontData.h
+    )
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/extras/FontAwsome_LICENSE.txt" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/extras/FontAwsome_LICENSE.txt")
+    install(TARGETS rlImGui
+            EXPORT rlImGuiTargets
+            ARCHIVE DESTINATION lib
+            FILE_SET HEADERS DESTINATION include
+            FILE_SET rlImGui_config DESTINATION include
+    )
+endif ()
+
+message("NO_FONT_AWESOME_CONFIG ${NO_FONT_AWESOME_CONFIG}")
 
 install(EXPORT rlImGuiTargets
         NAMESPACE rlImGui::
