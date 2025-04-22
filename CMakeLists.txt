@@ -63,14 +63,12 @@ set_target_properties(rlImGui PROPERTIES EXPORT_NAME "rlImGui")
 
 if (NO_FONT_AWESOME)
     target_compile_options(rlImGui PUBLIC "-DNO_FONT_AWESOME")
-    set(NO_FONT_AWESOME_CONFIG "add_compile_options(\"-DNO_FONT_AWESOME\")")
     install(TARGETS rlImGui
             EXPORT rlImGuiTargets
             ARCHIVE DESTINATION lib
             FILE_SET HEADERS DESTINATION include
     )
 else ()
-    set(NO_FONT_AWESOME_CONFIG "")
     target_sources(rlImGui
         PUBLIC
             FILE_SET rlImGui_config

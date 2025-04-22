@@ -44,5 +44,3 @@ if (NOT raylib_FOUND)
 endif ()
 
 include("${CMAKE_CURRENT_LIST_DIR}/rlImGuiTargets.cmake")
-
-@NO_FONT_AWESOME_CONFIG@
