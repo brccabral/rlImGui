@@ -65,36 +65,24 @@ if (NOT imgui_FOUND)
     if (BUILD_LIBTYPE_SHARED)
         set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
     endif ()
-    target_link_libraries(rlImGui PRIVATE imgui)
-    get_target_property(imgui_includes imgui INTERFACE_INCLUDE_DIRECTORIES)
-    message("imgui Includes: ${imgui_includes}")
-    target_include_directories(rlImGui PUBLIC $<TARGET_PROPERTY:imgui,INTERFACE_INCLUDE_DIRECTORIES>)
-    if (MSVC)
-        target_link_options(rlImGui PUBLIC "/WHOLEARCHIVE:$<TARGET_FILE:imgui>")
-    else()
-        target_link_options(rlImGui PUBLIC -Wl,--whole-archive)
-        target_link_libraries(rlImGui PUBLIC imgui)
-        target_link_options(rlImGui PUBLIC -Wl,--no-whole-archive)
-    endif()
 
     install(TARGETS imgui
-        EXPORT rlImGuiTargets
+        EXPORT imguiTargets
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         INCLUDES DESTINATION include
         FILE_SET HEADERS DESTINATION include
     )
-else ()
-    target_link_libraries(rlImGui PUBLIC imgui)
+    install(EXPORT imguiTargets
+            DESTINATION lib/cmake/imgui
+    )
 endif ()
+target_link_libraries(rlImGui PUBLIC imgui::imgui)
 
 find_package(raylib QUIET)
 if (NOT raylib_FOUND)
     message(STATUS "Fetching raylib")
-
-#    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW) # needed to override raylib options
-#    set(WITH_PIC ON)
     FetchContent_Declare(
         raylib
         URL      https://github.com/raysan5/raylib/archive/refs/tags/5.5.zip
@@ -105,30 +93,20 @@ if (NOT raylib_FOUND)
     if (BUILD_LIBTYPE_SHARED)
         set_property(TARGET raylib PROPERTY POSITION_INDEPENDENT_CODE ON)
     endif ()
-    target_link_libraries(rlImGui PRIVATE raylib)
-    get_target_property(raylib_includes raylib INTERFACE_INCLUDE_DIRECTORIES)
-    message("raylib Includes: ${raylib_includes}")
     target_include_directories(rlImGui PUBLIC $<TARGET_PROPERTY:raylib,INTERFACE_INCLUDE_DIRECTORIES>)
-    if (MSVC)
-        target_link_options(rlImGui PUBLIC "/WHOLEARCHIVE:$<TARGET_FILE:raylib>")
-    else()
-        target_link_options(rlImGui PUBLIC -Wl,--whole-archive)
-        target_link_libraries(rlImGui PUBLIC raylib)
-        target_link_options(rlImGui PUBLIC -Wl,--no-whole-archive)
-    endif()
-
 
     install(TARGETS raylib glfw
-        EXPORT rlImGuiTargets
+        EXPORT raylibTargets
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         INCLUDES DESTINATION include
-        PUBLIC_HEADER DESTINATION include
     )
-else ()
-    target_link_libraries(rlImGui PUBLIC raylib)
+    install(EXPORT raylibTargets
+            DESTINATION lib/cmake/raylib
+    )
 endif ()
+target_link_libraries(rlImGui PUBLIC raylib)
 
 set_target_properties(rlImGui PROPERTIES EXPORT_NAME "rlImGui")
 
