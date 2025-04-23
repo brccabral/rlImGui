@@ -22,6 +22,8 @@ if (BUILD_LIBTYPE_SHARED)
 else ()
     add_library(rlImGui STATIC)
 endif ()
+add_library(rlImGui::rlImGui ALIAS rlImGui)
+set_target_properties(rlImGui PROPERTIES EXPORT_NAME "rlImGui")
 
 target_sources(rlImGui
     PUBLIC
@@ -131,7 +133,6 @@ if (NOT raylib_FOUND)
 endif ()
 target_link_libraries(rlImGui PUBLIC raylib)
 
-set_target_properties(rlImGui PROPERTIES EXPORT_NAME "rlImGui")
 
 if (NO_FONT_AWESOME)
     target_compile_definitions(rlImGui PUBLIC "DNO_FONT_AWESOME")
