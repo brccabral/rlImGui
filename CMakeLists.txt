@@ -87,6 +87,7 @@ if (NOT imgui_FOUND)
         DESTINATION lib/cmake/imgui
     )
 
+    set_target_properties(imgui PROPERTIES EXPORT_NAME "imgui")
     install(TARGETS imgui
         EXPORT imguiTargets
         RUNTIME DESTINATION bin
@@ -96,6 +97,7 @@ if (NOT imgui_FOUND)
         FILE_SET HEADERS DESTINATION include
     )
     install(EXPORT imguiTargets
+            NAMESPACE imgui::
             DESTINATION lib/cmake/imgui
     )
 endif ()
