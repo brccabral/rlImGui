@@ -4,10 +4,6 @@ target_sources(simple
     PRIVATE simple.cpp
 )
 target_link_libraries(simple PRIVATE rlImGui)
-add_custom_command(TARGET simple POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${PROJECT_SOURCE_DIR}/resources/parrots.png" "$<TARGET_FILE_DIR:simple>/resources/parrots.png"
-)
 
 
 add_executable(editor)
@@ -15,10 +11,6 @@ target_sources(editor
     PRIVATE editor.cpp
 )
 target_link_libraries(editor PRIVATE rlImGui)
-add_custom_command(TARGET editor POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${PROJECT_SOURCE_DIR}/resources/parrots.png" "$<TARGET_FILE_DIR:editor>/resources/parrots.png"
-)
 
 
 add_executable(imgui_style_example)
@@ -26,10 +18,6 @@ target_sources(imgui_style_example
     PRIVATE imgui_style_example.cpp
 )
 target_link_libraries(imgui_style_example PRIVATE rlImGui)
-add_custom_command(TARGET imgui_style_example POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${PROJECT_SOURCE_DIR}/resources/driusstraight.ttf" "$<TARGET_FILE_DIR:imgui_style_example>/resources/driusstraight.ttf"
-)
 
 
 add_executable(docking_example)
