@@ -66,6 +66,21 @@ if (NOT imgui_FOUND)
         set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
     endif ()
 
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/imguiConfig.cmake"
+        "include(\"\${CMAKE_CURRENT_LIST_DIR}/imguiTargets.cmake\")\n"
+    )
+    include(CMakePackageConfigHelpers)
+    write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/imguiConfigVersion.cmake"
+        VERSION 1.91.9
+        COMPATIBILITY SameMajorVersion
+    )
+    install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/imguiConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/imguiConfigVersion.cmake"
+        DESTINATION lib/cmake/imgui
+    )
+
     install(TARGETS imgui
         EXPORT imguiTargets
         RUNTIME DESTINATION bin
