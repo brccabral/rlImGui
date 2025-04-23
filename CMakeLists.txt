@@ -1,96 +1,14 @@
 cmake_minimum_required(VERSION 3.23)
 project(rlImGui VERSION 0.1.0)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 option(RLIMGUI_BUILD_EXAMPLES "Build examples" OFF)
 option(BUILD_LIBTYPE_SHARED "Build type, shared OFF by default" OFF)
 option(NO_FONT_AWESOME "Do not use Font Awesome" OFF)
 
 include(FetchContent)
 include(GNUInstallDirs)
-
-find_package(imgui QUIET)
-if (NOT imgui_FOUND)
-    message(STATUS "Fetching imgui")
-    FetchContent_Declare(
-        imgui
-        URL      https://github.com/ocornut/imgui/archive/refs/tags/v1.91.9b.zip
-        URL_HASH MD5=913db10a6ef52623b118142aafba7438
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-    )
-    FetchContent_MakeAvailable(imgui)
-    if (BUILD_LIBTYPE_SHARED)
-        add_library(imgui SHARED)
-        if (WIN32)
-            target_compile_definitions(imgui PRIVATE "IMGUI_API=__declspec(dllexport)")
-        else ()
-            target_compile_definitions(imgui PRIVATE "IMGUI_API=__attribute__((visibility(\"default\")))")
-        endif ()
-    else ()
-        add_library(imgui STATIC)
-    endif ()
-    add_library(imgui::imgui ALIAS imgui)
-    target_sources(imgui
-        PUBLIC
-            FILE_SET HEADERS
-                FILES
-                ${imgui_SOURCE_DIR}/imgui.h
-                ${imgui_SOURCE_DIR}/imgui_internal.h
-                ${imgui_SOURCE_DIR}/imstb_rectpack.h
-                ${imgui_SOURCE_DIR}/imstb_textedit.h
-                ${imgui_SOURCE_DIR}/imstb_truetype.h
-                BASE_DIRS ${imgui_SOURCE_DIR}
-        PRIVATE
-            ${imgui_SOURCE_DIR}/imgui.cpp
-            ${imgui_SOURCE_DIR}/imgui_demo.cpp
-            ${imgui_SOURCE_DIR}/imgui_draw.cpp
-            ${imgui_SOURCE_DIR}/imgui_tables.cpp
-            ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-    )
-    install(TARGETS imgui
-        EXPORT imguiTargets
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        INCLUDES DESTINATION include
-        FILE_SET HEADERS DESTINATION include
-    )
-    install(EXPORT imguiTargets
-        FILE imguiTargets.cmake
-        NAMESPACE imgui::
-        DESTINATION lib/cmake/imgui
-    )
-endif ()
-
-if (BUILD_LIBTYPE_SHARED)
-    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW) # needed to override raylib options
-    set(raylib_USE_STATIC_LIBS OFF)
-    set(BUILD_SHARED_LIBS ON) # raylib option
-endif ()
-find_package(raylib QUIET)
-if (NOT raylib_FOUND)
-    message(STATUS "Fetching raylib")
-    FetchContent_Declare(
-        raylib
-        URL      https://github.com/raysan5/raylib/archive/refs/tags/5.5.zip
-        URL_HASH MD5=fa441b96a43796cd4b0ee2c7150e1d56
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-    )
-    FetchContent_MakeAvailable(raylib)
-    install(TARGETS raylib glfw
-        EXPORT raylibTargets
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        INCLUDES DESTINATION include
-        PUBLIC_HEADER DESTINATION include
-    )
-    install(EXPORT raylibTargets
-        FILE raylibTargets.cmake
-        DESTINATION lib/cmake/raylib
-    )
-    get_target_property(RAYLIB_INCLUDE_DIR raylib INTERFACE_INCLUDE_DIRECTORIES)
-endif ()
-
 
 if (BUILD_LIBTYPE_SHARED)
     add_library(rlImGui SHARED)
@@ -113,16 +31,113 @@ target_sources(rlImGui
     PRIVATE
         rlImGui.cpp
 )
-target_link_libraries(rlImGui PUBLIC imgui::imgui raylib)
+
+find_package(imgui QUIET)
+if (NOT imgui_FOUND)
+    message(STATUS "Fetching imgui")
+    FetchContent_Declare(
+        imgui
+        URL      https://github.com/ocornut/imgui/archive/refs/tags/v1.91.9b.zip
+        URL_HASH MD5=913db10a6ef52623b118142aafba7438
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    FetchContent_MakeAvailable(imgui)
+    add_library(imgui STATIC)
+    add_library(imgui::imgui ALIAS imgui)
+    target_sources(imgui
+        PUBLIC
+            FILE_SET HEADERS
+                FILES
+                ${imgui_SOURCE_DIR}/imgui.h
+                ${imgui_SOURCE_DIR}/imgui_internal.h
+                ${imgui_SOURCE_DIR}/imstb_rectpack.h
+                ${imgui_SOURCE_DIR}/imstb_textedit.h
+                ${imgui_SOURCE_DIR}/imstb_truetype.h
+                BASE_DIRS ${imgui_SOURCE_DIR}
+        PRIVATE
+            ${imgui_SOURCE_DIR}/imgui.cpp
+            ${imgui_SOURCE_DIR}/imgui_demo.cpp
+            ${imgui_SOURCE_DIR}/imgui_draw.cpp
+            ${imgui_SOURCE_DIR}/imgui_tables.cpp
+            ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    )
+    target_compile_definitions(imgui PUBLIC "IMGUI_API=__attribute__((visibility(\"default\")))")
+    if (BUILD_LIBTYPE_SHARED)
+        set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
+    endif ()
+    target_link_libraries(rlImGui PRIVATE imgui)
+    get_target_property(imgui_includes imgui INTERFACE_INCLUDE_DIRECTORIES)
+    message("imgui Includes: ${imgui_includes}")
+    target_include_directories(rlImGui PUBLIC $<TARGET_PROPERTY:imgui,INTERFACE_INCLUDE_DIRECTORIES>)
+    if (MSVC)
+        target_link_options(rlImGui PUBLIC "/WHOLEARCHIVE:$<TARGET_FILE:imgui>")
+    else()
+        target_link_options(rlImGui PUBLIC -Wl,--whole-archive)
+        target_link_libraries(rlImGui PUBLIC imgui)
+        target_link_options(rlImGui PUBLIC -Wl,--no-whole-archive)
+    endif()
+
+    install(TARGETS imgui
+        EXPORT rlImGuiTargets
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        INCLUDES DESTINATION include
+        FILE_SET HEADERS DESTINATION include
+    )
+else ()
+    target_link_libraries(rlImGui PUBLIC imgui)
+endif ()
+
+find_package(raylib QUIET)
+if (NOT raylib_FOUND)
+    message(STATUS "Fetching raylib")
+
+#    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW) # needed to override raylib options
+#    set(WITH_PIC ON)
+    FetchContent_Declare(
+        raylib
+        URL      https://github.com/raysan5/raylib/archive/refs/tags/5.5.zip
+        URL_HASH MD5=fa441b96a43796cd4b0ee2c7150e1d56
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    FetchContent_MakeAvailable(raylib)
+    if (BUILD_LIBTYPE_SHARED)
+        set_property(TARGET raylib PROPERTY POSITION_INDEPENDENT_CODE ON)
+    endif ()
+    target_link_libraries(rlImGui PRIVATE raylib)
+    get_target_property(raylib_includes raylib INTERFACE_INCLUDE_DIRECTORIES)
+    message("raylib Includes: ${raylib_includes}")
+    target_include_directories(rlImGui PUBLIC $<TARGET_PROPERTY:raylib,INTERFACE_INCLUDE_DIRECTORIES>)
+    if (MSVC)
+        target_link_options(rlImGui PUBLIC "/WHOLEARCHIVE:$<TARGET_FILE:raylib>")
+    else()
+        target_link_options(rlImGui PUBLIC -Wl,--whole-archive)
+        target_link_libraries(rlImGui PUBLIC raylib)
+        target_link_options(rlImGui PUBLIC -Wl,--no-whole-archive)
+    endif()
+
+
+    install(TARGETS raylib glfw
+        EXPORT rlImGuiTargets
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        INCLUDES DESTINATION include
+        PUBLIC_HEADER DESTINATION include
+    )
+else ()
+    target_link_libraries(rlImGui PUBLIC raylib)
+endif ()
 
 set_target_properties(rlImGui PROPERTIES EXPORT_NAME "rlImGui")
 
 if (NO_FONT_AWESOME)
-    target_compile_options(rlImGui PUBLIC "-DNO_FONT_AWESOME")
+    target_compile_definitions(rlImGui PUBLIC "DNO_FONT_AWESOME")
     install(TARGETS rlImGui
             EXPORT rlImGuiTargets
             ARCHIVE DESTINATION lib
-            FILE_SET HEADERS DESTINATION include
+            FILE_SET rlImGui_headers DESTINATION include
     )
 else ()
     target_sources(rlImGui
