@@ -10,30 +10,7 @@ option(NO_FONT_AWESOME "Do not use Font Awesome" OFF)
 include(FetchContent)
 include(GNUInstallDirs)
 
-if (BUILD_LIBTYPE_SHARED)
-    add_library(rlImGui SHARED)
-    target_compile_definitions(rlImGui
-                           INTERFACE $<BUILD_INTERFACE:BUILD_LIBTYPE_SHARED>
-                           $<INSTALL_INTERFACE:USE_LIBTYPE_SHARED>
-    )
-    if (WIN32)
-        target_compile_definitions(rlImGui INTERFACE "IMGUI_API=__declspec(dllimport)")
-    endif ()
-else ()
-    add_library(rlImGui STATIC)
-endif ()
-add_library(rlImGui::rlImGui ALIAS rlImGui)
-set_target_properties(rlImGui PROPERTIES EXPORT_NAME "rlImGui")
-
-target_sources(rlImGui
-    PUBLIC
-        FILE_SET rlImGui_headers
-        TYPE HEADERS
-        FILES rlImGui.h rlImGuiColors.h imgui_impl_raylib.h
-    PRIVATE
-        rlImGui.cpp
-)
-
+# ================== ImGui
 message(STATUS "Fetching imgui")
 FetchContent_Declare(
     imgui
@@ -62,15 +39,6 @@ target_sources(imgui
         ${imgui_SOURCE_DIR}/imgui_tables.cpp
         ${imgui_SOURCE_DIR}/imgui_widgets.cpp
 )
-target_include_directories(rlImGui PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>)
-if (BUILD_LIBTYPE_SHARED)
-    set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
-    if (MSVC)
-        target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:imgui>")
-    else ()
-        target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive imgui -Wl,--no-whole-archive)
-    endif ()
-endif ()
 
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/imguiConfig.cmake.in"
     "@PACKAGE_INIT@\ninclude(\"\${CMAKE_CURRENT_LIST_DIR}/imguiTargets.cmake\")\n"
@@ -102,8 +70,8 @@ install(EXPORT imguiTargets
         NAMESPACE imgui::
         DESTINATION lib/cmake/imgui
 )
-target_link_libraries(rlImGui PRIVATE imgui::imgui)
 
+# ================== raylib
 message(STATUS "Fetching raylib")
 FetchContent_Declare(
     raylib
@@ -112,15 +80,6 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable(raylib)
-target_include_directories(rlImGui PUBLIC $<BUILD_INTERFACE:${raylib_SOURCE_DIR}/src>)
-if (BUILD_LIBTYPE_SHARED)
-    set_property(TARGET raylib PROPERTY POSITION_INDEPENDENT_CODE ON)
-    if (MSVC)
-        target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:raylib>")
-    else ()
-        target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive raylib -Wl,--no-whole-archive)
-    endif ()
-endif ()
 
 if (TARGET glfw)
     install(TARGETS glfw
@@ -131,7 +90,46 @@ endif ()
 install(EXPORT raylib-targets
         DESTINATION lib/cmake/raylib
 )
-target_link_libraries(rlImGui PRIVATE raylib)
+
+# ================== rlImGui
+if (BUILD_LIBTYPE_SHARED)
+    add_library(rlImGui SHARED)
+    target_compile_definitions(rlImGui
+                           PRIVATE $<BUILD_INTERFACE:BUILD_LIBTYPE_SHARED>
+                           INTERFACE $<INSTALL_INTERFACE:USE_LIBTYPE_SHARED>
+    )
+    if (WIN32)
+        target_compile_definitions(rlImGui INTERFACE "IMGUI_API=__declspec(dllimport)")
+    endif ()
+else ()
+    add_library(rlImGui STATIC)
+endif ()
+add_library(rlImGui::rlImGui ALIAS rlImGui)
+set_target_properties(rlImGui PROPERTIES EXPORT_NAME "rlImGui")
+
+target_sources(rlImGui
+    PUBLIC
+        FILE_SET rlImGui_headers
+        TYPE HEADERS
+        FILES rlImGui.h rlImGuiColors.h imgui_impl_raylib.h
+    PRIVATE
+        rlImGui.cpp
+)
+target_include_directories(rlImGui PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>
+                           $<BUILD_INTERFACE:${raylib_SOURCE_DIR}/src>)
+if (BUILD_LIBTYPE_SHARED)
+    set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
+    set_property(TARGET raylib PROPERTY POSITION_INDEPENDENT_CODE ON)
+    if (MSVC)
+        target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:imgui>")
+        target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:raylib>")
+    else ()
+        target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive imgui -Wl,--no-whole-archive)
+        target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive raylib -Wl,--no-whole-archive)
+    endif ()
+endif ()
+
+target_link_libraries(rlImGui PRIVATE raylib imgui::imgui)
 
 
 if (NO_FONT_AWESOME)
@@ -167,14 +165,10 @@ write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/rlImGuiConfigVersion.cmake"
     COMPATIBILITY SameMajorVersion
 )
+configure_file(cmake/rlImGuiConfig.cmake.in rlImGuiConfig.cmake @ONLY)
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/rlImGuiConfigVersion.cmake"
-    DESTINATION lib/cmake/rlImGui
-)
-
-configure_file(cmake/rlImGuiConfig.cmake.in rlImGuiConfig.cmake @ONLY)
-install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/rlImGuiConfig.cmake"
     DESTINATION lib/cmake/rlImGui
 )
