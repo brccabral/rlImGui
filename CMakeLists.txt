@@ -34,114 +34,108 @@ target_sources(rlImGui
         rlImGui.cpp
 )
 
-#find_package(imgui QUIET)
-if (NOT imgui_FOUND)
-    message(STATUS "Fetching imgui")
-    FetchContent_Declare(
-        imgui
-        URL      https://github.com/ocornut/imgui/archive/refs/tags/v1.91.9b.zip
-        URL_HASH MD5=913db10a6ef52623b118142aafba7438
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-    )
-    FetchContent_MakeAvailable(imgui)
-    add_library(imgui STATIC)
-    add_library(imgui::imgui ALIAS imgui)
-    target_sources(imgui
-        PUBLIC
-            FILE_SET HEADERS
-                FILES
-                ${imgui_SOURCE_DIR}/imgui.h
-                ${imgui_SOURCE_DIR}/imconfig.h
-                ${imgui_SOURCE_DIR}/imgui_internal.h
-                ${imgui_SOURCE_DIR}/imstb_rectpack.h
-                ${imgui_SOURCE_DIR}/imstb_textedit.h
-                ${imgui_SOURCE_DIR}/imstb_truetype.h
-                BASE_DIRS ${imgui_SOURCE_DIR}
-        PRIVATE
-            ${imgui_SOURCE_DIR}/imgui.cpp
-            ${imgui_SOURCE_DIR}/imgui_demo.cpp
-            ${imgui_SOURCE_DIR}/imgui_draw.cpp
-            ${imgui_SOURCE_DIR}/imgui_tables.cpp
-            ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-    )
-    target_include_directories(rlImGui PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>)
-    if (BUILD_LIBTYPE_SHARED)
-        set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
-        if (MSVC)
-            target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:imgui>")
-        else()
-            target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive imgui -Wl,--no-whole-archive)
-        endif()
-    endif ()
-
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/imguiConfig.cmake.in"
-        "@PACKAGE_INIT@\ninclude(\"\${CMAKE_CURRENT_LIST_DIR}/imguiTargets.cmake\")\n"
-    )
-    include(CMakePackageConfigHelpers)
-    write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/imguiConfigVersion.cmake"
-        VERSION 1.91.9
-        COMPATIBILITY SameMajorVersion
-    )
-    configure_package_config_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/imguiConfig.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/imguiConfig.cmake"
-        INSTALL_DESTINATION lib/cmake/imgui
-    )
-
-    install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/imguiConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/imguiConfigVersion.cmake"
-        DESTINATION lib/cmake/imgui
-    )
-
-    set_target_properties(imgui PROPERTIES EXPORT_NAME "imgui")
-    install(TARGETS imgui
-        EXPORT imguiTargets
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        INCLUDES DESTINATION include
-        FILE_SET HEADERS DESTINATION include
-    )
-    install(EXPORT imguiTargets
-            NAMESPACE imgui::
-            DESTINATION lib/cmake/imgui
-    )
+message(STATUS "Fetching imgui")
+FetchContent_Declare(
+    imgui
+    URL      https://github.com/ocornut/imgui/archive/refs/tags/v1.91.9b.zip
+    URL_HASH MD5=913db10a6ef52623b118142aafba7438
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(imgui)
+add_library(imgui STATIC)
+add_library(imgui::imgui ALIAS imgui)
+target_sources(imgui
+    PUBLIC
+        FILE_SET HEADERS
+            FILES
+            ${imgui_SOURCE_DIR}/imgui.h
+            ${imgui_SOURCE_DIR}/imconfig.h
+            ${imgui_SOURCE_DIR}/imgui_internal.h
+            ${imgui_SOURCE_DIR}/imstb_rectpack.h
+            ${imgui_SOURCE_DIR}/imstb_textedit.h
+            ${imgui_SOURCE_DIR}/imstb_truetype.h
+            BASE_DIRS ${imgui_SOURCE_DIR}
+    PRIVATE
+        ${imgui_SOURCE_DIR}/imgui.cpp
+        ${imgui_SOURCE_DIR}/imgui_demo.cpp
+        ${imgui_SOURCE_DIR}/imgui_draw.cpp
+        ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+)
+target_include_directories(rlImGui PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>)
+if (BUILD_LIBTYPE_SHARED)
+    set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
+    if (MSVC)
+        target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:imgui>")
+    else()
+        target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive imgui -Wl,--no-whole-archive)
+    endif()
 endif ()
+
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/imguiConfig.cmake.in"
+    "@PACKAGE_INIT@\ninclude(\"\${CMAKE_CURRENT_LIST_DIR}/imguiTargets.cmake\")\n"
+)
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/imguiConfigVersion.cmake"
+    VERSION 1.91.9
+    COMPATIBILITY SameMajorVersion
+)
+configure_package_config_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/imguiConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/imguiConfig.cmake"
+    INSTALL_DESTINATION lib/cmake/imgui
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/imguiConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/imguiConfigVersion.cmake"
+    DESTINATION lib/cmake/imgui
+)
+
+set_target_properties(imgui PROPERTIES EXPORT_NAME "imgui")
+install(TARGETS imgui
+    EXPORT imguiTargets
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    INCLUDES DESTINATION include
+    FILE_SET HEADERS DESTINATION include
+)
+install(EXPORT imguiTargets
+        NAMESPACE imgui::
+        DESTINATION lib/cmake/imgui
+)
 target_link_libraries(rlImGui PRIVATE imgui::imgui)
 
-#find_package(raylib QUIET)
-if (NOT raylib_FOUND)
-    message(STATUS "Fetching raylib")
-    FetchContent_Declare(
-        raylib
-        URL      https://github.com/raysan5/raylib/archive/refs/tags/5.5.zip
-        URL_HASH MD5=fa441b96a43796cd4b0ee2c7150e1d56
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-    )
-    FetchContent_MakeAvailable(raylib)
-    target_include_directories(rlImGui PUBLIC $<BUILD_INTERFACE:${raylib_SOURCE_DIR}/src>)
-    if (BUILD_LIBTYPE_SHARED)
-        set_property(TARGET raylib PROPERTY POSITION_INDEPENDENT_CODE ON)
-        if (MSVC)
-            target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:raylib>")
-        else()
-            target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive raylib -Wl,--no-whole-archive)
-        endif()
-    endif ()
-
-    install(TARGETS raylib glfw
-        EXPORT raylibTargets
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        INCLUDES DESTINATION include
-    )
-    install(EXPORT raylibTargets
-            DESTINATION lib/cmake/raylib
-    )
+message(STATUS "Fetching raylib")
+FetchContent_Declare(
+    raylib
+    URL      https://github.com/raysan5/raylib/archive/refs/tags/5.5.zip
+    URL_HASH MD5=fa441b96a43796cd4b0ee2c7150e1d56
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(raylib)
+target_include_directories(rlImGui PUBLIC $<BUILD_INTERFACE:${raylib_SOURCE_DIR}/src>)
+if (BUILD_LIBTYPE_SHARED)
+    set_property(TARGET raylib PROPERTY POSITION_INDEPENDENT_CODE ON)
+    if (MSVC)
+        target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:raylib>")
+    else()
+        target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive raylib -Wl,--no-whole-archive)
+    endif()
 endif ()
+
+install(TARGETS raylib glfw
+    EXPORT raylibTargets
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    INCLUDES DESTINATION include
+)
+install(EXPORT raylibTargets
+        DESTINATION lib/cmake/raylib
+)
 target_link_libraries(rlImGui PRIVATE raylib)
 
 
