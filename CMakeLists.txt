@@ -67,9 +67,9 @@ if (BUILD_LIBTYPE_SHARED)
     set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
     if (MSVC)
         target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:imgui>")
-    else()
+    else ()
         target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive imgui -Wl,--no-whole-archive)
-    endif()
+    endif ()
 endif ()
 
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/imguiConfig.cmake.in"
@@ -96,10 +96,6 @@ install(FILES
 set_target_properties(imgui PROPERTIES EXPORT_NAME "imgui")
 install(TARGETS imgui
     EXPORT imguiTargets
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    INCLUDES DESTINATION include
     FILE_SET HEADERS DESTINATION include
 )
 install(EXPORT imguiTargets
@@ -121,19 +117,18 @@ if (BUILD_LIBTYPE_SHARED)
     set_property(TARGET raylib PROPERTY POSITION_INDEPENDENT_CODE ON)
     if (MSVC)
         target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:raylib>")
-    else()
+    else ()
         target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive raylib -Wl,--no-whole-archive)
-    endif()
+    endif ()
 endif ()
 
-install(TARGETS raylib glfw
-    EXPORT raylibTargets
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    INCLUDES DESTINATION include
-)
-install(EXPORT raylibTargets
+if (TARGET glfw)
+    install(TARGETS glfw
+        EXPORT raylib-targets
+        PUBLIC_HEADER DESTINATION include
+    )
+endif ()
+install(EXPORT raylib-targets
         DESTINATION lib/cmake/raylib
 )
 target_link_libraries(rlImGui PRIVATE raylib)
