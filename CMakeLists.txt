@@ -128,12 +128,19 @@ install(EXPORT rlImGuiTargets
         DESTINATION lib/cmake/rlImGui
 )
 
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/rlImGuiConfig.cmake.in"
+"@PACKAGE_INIT@\n"
+"set(ENV{PKG_CONFIG_PATH} \"\${CMAKE_CURRENT_LIST_DIR}/../../pkgconfig;\$ENV{PKG_CONFIG_PATH}\")\n"
+"find_package(raylib REQUIRED HINTS \"\${CMAKE_CURRENT_LIST_DIR}/../raylib\")\n"
+"include(\"\${CMAKE_CURRENT_LIST_DIR}/rlImGuiTargets.cmake\")\n"
+)
+
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/rlImGuiConfigVersion.cmake"
     COMPATIBILITY SameMajorVersion
 )
-configure_file(cmake/rlImGuiConfig.cmake.in rlImGuiConfig.cmake @ONLY)
+configure_file("${CMAKE_CURRENT_BINARY_DIR}/rlImGuiConfig.cmake.in" rlImGuiConfig.cmake @ONLY)
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/rlImGuiConfigVersion.cmake"
@@ -142,7 +149,45 @@ install(FILES
 )
 
 
+# ================== examples
 if (RLIMGUI_BUILD_EXAMPLES)
-    add_subdirectory(examples)
+
+    add_executable(simple)
+    target_sources(simple
+        PRIVATE examples/simple.cpp
+    )
+    target_link_libraries(simple PRIVATE rlImGui::rlImGui)
+
+
+    add_executable(editor)
+    target_sources(editor
+        PRIVATE examples/editor.cpp
+    )
+    target_link_libraries(editor PRIVATE rlImGui::rlImGui)
+
+
+    add_executable(imgui_style_example)
+    target_sources(imgui_style_example
+        PRIVATE examples/imgui_style_example.cpp
+    )
+    target_link_libraries(imgui_style_example PRIVATE rlImGui::rlImGui)
+
+
+    add_executable(docking_example)
+    target_sources(docking_example
+        PRIVATE examples/docking_example.cpp
+    )
+    target_link_libraries(docking_example PRIVATE rlImGui::rlImGui)
+
+
+    if (NOT NO_FONT_AWESOME)
+    add_executable(asset_browser)
+    target_sources(asset_browser
+        PRIVATE examples/asset_browser/main.cpp examples/asset_browser/asset_browser.cpp examples/asset_browser/imgui_utils.cpp examples/asset_browser/item_views.cpp
+            examples/asset_browser/asset_browser.h examples/asset_browser/imgui_utils.h examples/asset_browser/item_view.h
+    )
+    target_link_libraries(asset_browser PRIVATE rlImGui::rlImGui)
+    endif ()
+
 endif ()
 
