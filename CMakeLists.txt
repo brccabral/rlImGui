@@ -34,7 +34,7 @@ target_sources(rlImGui
         rlImGui.cpp
 )
 
-find_package(imgui QUIET)
+#find_package(imgui QUIET)
 if (NOT imgui_FOUND)
     message(STATUS "Fetching imgui")
     FetchContent_Declare(
@@ -64,9 +64,14 @@ if (NOT imgui_FOUND)
             ${imgui_SOURCE_DIR}/imgui_tables.cpp
             ${imgui_SOURCE_DIR}/imgui_widgets.cpp
     )
-    target_compile_definitions(imgui PUBLIC "IMGUI_API=__attribute__((visibility(\"default\")))")
+    target_include_directories(rlImGui PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>)
     if (BUILD_LIBTYPE_SHARED)
         set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
+        if (MSVC)
+            target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:imgui>")
+        else()
+            target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive imgui -Wl,--no-whole-archive)
+        endif()
     endif ()
 
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/imguiConfig.cmake.in"
@@ -104,9 +109,9 @@ if (NOT imgui_FOUND)
             DESTINATION lib/cmake/imgui
     )
 endif ()
-target_link_libraries(rlImGui PUBLIC imgui::imgui)
+target_link_libraries(rlImGui PRIVATE imgui::imgui)
 
-find_package(raylib QUIET)
+#find_package(raylib QUIET)
 if (NOT raylib_FOUND)
     message(STATUS "Fetching raylib")
     FetchContent_Declare(
@@ -116,10 +121,15 @@ if (NOT raylib_FOUND)
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     FetchContent_MakeAvailable(raylib)
+    target_include_directories(rlImGui PUBLIC $<BUILD_INTERFACE:${raylib_SOURCE_DIR}/src>)
     if (BUILD_LIBTYPE_SHARED)
         set_property(TARGET raylib PROPERTY POSITION_INDEPENDENT_CODE ON)
+        if (MSVC)
+            target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:raylib>")
+        else()
+            target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive raylib -Wl,--no-whole-archive)
+        endif()
     endif ()
-    target_include_directories(rlImGui PUBLIC $<TARGET_PROPERTY:raylib,INTERFACE_INCLUDE_DIRECTORIES>)
 
     install(TARGETS raylib glfw
         EXPORT raylibTargets
@@ -132,7 +142,7 @@ if (NOT raylib_FOUND)
             DESTINATION lib/cmake/raylib
     )
 endif ()
-target_link_libraries(rlImGui PUBLIC raylib)
+target_link_libraries(rlImGui PRIVATE raylib)
 
 
 if (NO_FONT_AWESOME)
