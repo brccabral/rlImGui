@@ -1,0 +1,6 @@
+@PACKAGE_INIT@
+
+set(ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_LIST_DIR}/../../pkgconfig;$ENV{PKG_CONFIG_PATH}")
+find_package(raylib REQUIRED HINTS "${CMAKE_CURRENT_LIST_DIR}/../raylib")
+
+include("${CMAKE_CURRENT_LIST_DIR}/rlImGuiTargets.cmake")
