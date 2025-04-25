@@ -49,18 +49,14 @@ if (NOT raylib_FOUND)
         URL      https://github.com/raysan5/raylib/archive/refs/tags/5.5.zip
         URL_HASH MD5=fa441b96a43796cd4b0ee2c7150e1d56
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        EXCLUDE_FROM_ALL
     )
     FetchContent_MakeAvailable(raylib)
 
-    if (TARGET glfw)
-        install(TARGETS glfw
-            EXPORT raylib-targets
-            PUBLIC_HEADER DESTINATION include
-        )
-    endif ()
-    install(EXPORT raylib-targets
-            DESTINATION lib/cmake/raylib
-    )
+    get_target_property(RAYLIB_HEADERS raylib SOURCES)
+    list(FILTER RAYLIB_HEADERS INCLUDE REGEX "\\.h$")
+    list(TRANSFORM RAYLIB_HEADERS PREPEND ${raylib_SOURCE_DIR}/src/)
+
     set(fetched_raylib 1)
 endif ()
 
@@ -85,16 +81,8 @@ target_sources(rlImGui
         FILE_SET rlImGui_headers
             TYPE HEADERS
             FILES rlImGui.h rlImGuiColors.h imgui_impl_raylib.h
-        FILE_SET imgui_headers
-            TYPE HEADERS
-            FILES ${imgui_headers}
-            BASE_DIRS ${imgui_SOURCE_DIR}
     PRIVATE
-        rlImGui.cpp ${imgui_sources}
-)
-target_include_directories(rlImGui
-                           PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>
-                                  $<BUILD_INTERFACE:${raylib_SOURCE_DIR}/src>
+        rlImGui.cpp
 )
 if (BUILD_LIBTYPE_SHARED)
     set_property(TARGET raylib PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -108,6 +96,19 @@ endif ()
 if (NOT fetched_imgui)
     target_link_libraries(rlImGui PUBLIC imgui::imgui)
     set(IMGUI_DEPENDENCY_CONFIG "find_dependency(imgui REQUIRED)\n")
+else ()
+    target_sources(rlImGui
+        PUBLIC
+            FILE_SET imgui_headers
+                TYPE HEADERS
+                FILES ${imgui_headers}
+                BASE_DIRS ${imgui_SOURCE_DIR}
+        PRIVATE
+            ${imgui_sources}
+    )
+    target_include_directories(rlImGui
+                               PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>
+    )
 endif ()
 if (NOT fetched_raylib)
     target_link_libraries(rlImGui PUBLIC raylib)
@@ -115,16 +116,20 @@ if (NOT fetched_raylib)
 else ()
     target_link_libraries(rlImGui PRIVATE raylib)
     set(RAYLIB_DEPENDENCY_CONFIG "set(ENV{PKG_CONFIG_PATH} \"\${CMAKE_CURRENT_LIST_DIR}/../../pkgconfig;\$ENV{PKG_CONFIG_PATH}\")\nfind_dependency(raylib REQUIRED)")
+    target_include_directories(rlImGui
+                               PUBLIC $<BUILD_INTERFACE:${raylib_SOURCE_DIR}/src>
+    )
+    target_sources(rlImGui
+        PUBLIC
+            FILE_SET raylib_headers
+               TYPE HEADERS
+               FILES ${RAYLIB_HEADERS}
+               BASE_DIRS ${raylib_SOURCE_DIR}/src
+    )
 endif ()
 
 if (NO_FONT_AWESOME)
     target_compile_definitions(rlImGui PUBLIC "NO_FONT_AWESOME")
-    install(TARGETS rlImGui
-            EXPORT rlImGuiTargets
-            ARCHIVE DESTINATION lib
-            FILE_SET rlImGui_headers DESTINATION include
-            FILE_SET imgui_headers DESTINATION include
-    )
 else ()
     target_sources(rlImGui
         PUBLIC
@@ -133,14 +138,16 @@ else ()
                FILES extras/IconsFontAwesome6.h extras/FA6FreeSolidFontData.h
     )
     install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/extras/FontAwsome_LICENSE.txt" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/extras/FontAwsome_LICENSE.txt")
-    install(TARGETS rlImGui
-            EXPORT rlImGuiTargets
-            ARCHIVE DESTINATION lib
-            FILE_SET rlImGui_headers DESTINATION include
-            FILE_SET imgui_headers DESTINATION include
-            FILE_SET rlImGui_config DESTINATION include
-    )
 endif ()
+
+install(TARGETS rlImGui
+        EXPORT rlImGuiTargets
+        ARCHIVE DESTINATION lib
+        FILE_SET rlImGui_headers DESTINATION include
+        FILE_SET imgui_headers DESTINATION include
+        FILE_SET rlImGui_config DESTINATION include
+        FILE_SET raylib_headers DESTINATION include
+)
 
 install(EXPORT rlImGuiTargets
         NAMESPACE rlImGui::
