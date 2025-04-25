@@ -9,50 +9,60 @@ include(FetchContent)
 include(GNUInstallDirs)
 
 # ================== ImGui
-message(STATUS "Fetching imgui")
-FetchContent_Declare(
-    imgui
-    URL      https://github.com/ocornut/imgui/archive/refs/tags/v1.91.9b.zip
-    URL_HASH MD5=913db10a6ef52623b118142aafba7438
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-FetchContent_MakeAvailable(imgui)
+set(fetched_imgui 0)
+find_package(imgui QUIET)
+if (NOT imgui_FOUND)
+    message(STATUS "Fetching imgui")
+    FetchContent_Declare(
+        imgui
+        URL      https://github.com/ocornut/imgui/archive/refs/tags/v1.91.9b.zip
+        URL_HASH MD5=913db10a6ef52623b118142aafba7438
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    FetchContent_MakeAvailable(imgui)
 
-set(imgui_sources
-    ${imgui_SOURCE_DIR}/imgui.cpp
-    ${imgui_SOURCE_DIR}/imgui_demo.cpp
-    ${imgui_SOURCE_DIR}/imgui_draw.cpp
-    ${imgui_SOURCE_DIR}/imgui_tables.cpp
-    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-)
-set(imgui_headers
-    ${imgui_SOURCE_DIR}/imgui.h
-    ${imgui_SOURCE_DIR}/imconfig.h
-    ${imgui_SOURCE_DIR}/imgui_internal.h
-    ${imgui_SOURCE_DIR}/imstb_rectpack.h
-    ${imgui_SOURCE_DIR}/imstb_textedit.h
-    ${imgui_SOURCE_DIR}/imstb_truetype.h
-)
+    set(imgui_sources
+        ${imgui_SOURCE_DIR}/imgui.cpp
+        ${imgui_SOURCE_DIR}/imgui_demo.cpp
+        ${imgui_SOURCE_DIR}/imgui_draw.cpp
+        ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    )
+    set(imgui_headers
+        ${imgui_SOURCE_DIR}/imgui.h
+        ${imgui_SOURCE_DIR}/imconfig.h
+        ${imgui_SOURCE_DIR}/imgui_internal.h
+        ${imgui_SOURCE_DIR}/imstb_rectpack.h
+        ${imgui_SOURCE_DIR}/imstb_textedit.h
+        ${imgui_SOURCE_DIR}/imstb_truetype.h
+    )
+    set(fetched_imgui 1)
+endif()
 
 # ================== raylib
-message(STATUS "Fetching raylib")
-FetchContent_Declare(
-    raylib
-    URL      https://github.com/raysan5/raylib/archive/refs/tags/5.5.zip
-    URL_HASH MD5=fa441b96a43796cd4b0ee2c7150e1d56
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-FetchContent_MakeAvailable(raylib)
-
-if (TARGET glfw)
-    install(TARGETS glfw
-        EXPORT raylib-targets
-        PUBLIC_HEADER DESTINATION include
+set(fetched_raylib 0)
+find_package(raylib QUIET)
+if (NOT raylib_FOUND)
+    message(STATUS "Fetching raylib")
+    FetchContent_Declare(
+        raylib
+        URL      https://github.com/raysan5/raylib/archive/refs/tags/5.5.zip
+        URL_HASH MD5=fa441b96a43796cd4b0ee2c7150e1d56
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
+    FetchContent_MakeAvailable(raylib)
+
+    if (TARGET glfw)
+        install(TARGETS glfw
+            EXPORT raylib-targets
+            PUBLIC_HEADER DESTINATION include
+        )
+    endif ()
+    install(EXPORT raylib-targets
+            DESTINATION lib/cmake/raylib
+    )
+    set(fetched_raylib 1)
 endif ()
-install(EXPORT raylib-targets
-        DESTINATION lib/cmake/raylib
-)
 
 # ================== rlImGui
 if (BUILD_LIBTYPE_SHARED)
@@ -95,11 +105,20 @@ if (BUILD_LIBTYPE_SHARED)
     endif ()
 endif ()
 
-target_link_libraries(rlImGui PRIVATE raylib)
-
+if (NOT fetched_imgui)
+    target_link_libraries(rlImGui PUBLIC imgui::imgui)
+    set(IMGUI_DEPENDENCY_CONFIG "find_dependency(imgui REQUIRED)\n")
+endif ()
+if (NOT fetched_raylib)
+    target_link_libraries(rlImGui PUBLIC raylib)
+    set(RAYLIB_DEPENDENCY_CONFIG "find_dependency(raylib REQUIRED)\n")
+else ()
+    target_link_libraries(rlImGui PRIVATE raylib)
+    set(RAYLIB_DEPENDENCY_CONFIG "set(ENV{PKG_CONFIG_PATH} \"\${CMAKE_CURRENT_LIST_DIR}/../../pkgconfig;\$ENV{PKG_CONFIG_PATH}\")\nfind_dependency(raylib REQUIRED)")
+endif ()
 
 if (NO_FONT_AWESOME)
-    target_compile_definitions(rlImGui PUBLIC "DNO_FONT_AWESOME")
+    target_compile_definitions(rlImGui PUBLIC "NO_FONT_AWESOME")
     install(TARGETS rlImGui
             EXPORT rlImGuiTargets
             ARCHIVE DESTINATION lib
@@ -130,8 +149,9 @@ install(EXPORT rlImGuiTargets
 
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/rlImGuiConfig.cmake.in"
 "@PACKAGE_INIT@\n"
-"set(ENV{PKG_CONFIG_PATH} \"\${CMAKE_CURRENT_LIST_DIR}/../../pkgconfig;\$ENV{PKG_CONFIG_PATH}\")\n"
-"find_package(raylib REQUIRED HINTS \"\${CMAKE_CURRENT_LIST_DIR}/../raylib\")\n"
+"include(CMakeFindDependencyMacro)\n"
+"@IMGUI_DEPENDENCY_CONFIG@"
+"@RAYLIB_DEPENDENCY_CONFIG@"
 "include(\"\${CMAKE_CURRENT_LIST_DIR}/rlImGuiTargets.cmake\")\n"
 )
 
