@@ -25,24 +25,26 @@ add_library(rlImGui::rlImGui ALIAS rlImGui)
 set_target_properties(rlImGui PROPERTIES EXPORT_NAME "rlImGui")
 
 target_sources(rlImGui
-    PUBLIC
-        FILE_SET rlImGui_headers
-            TYPE HEADERS
-            FILES rlImGui.h rlImGuiColors.h imgui_impl_raylib.h
-    PRIVATE
-        rlImGui.cpp
+               PUBLIC
+                   FILE_SET rlImGui_headers
+                   TYPE HEADERS
+                   FILES ../rlImGui.h ../rlImGuiColors.h ../imgui_impl_raylib.h
+                   BASE_DIRS ../
+               PRIVATE
+                   ../rlImGui.cpp
 )
 
 if (NO_FONT_AWESOME)
     target_compile_definitions(rlImGui PUBLIC "NO_FONT_AWESOME")
 else ()
     target_sources(rlImGui
-        PUBLIC
-            FILE_SET rlImGui_config
-               TYPE HEADERS
-               FILES extras/IconsFontAwesome6.h extras/FA6FreeSolidFontData.h
+                   PUBLIC
+                   FILE_SET rlImGui_config
+                   TYPE HEADERS
+                   FILES ../extras/IconsFontAwesome6.h ../extras/FA6FreeSolidFontData.h
+                   BASE_DIRS ../
     )
-    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/extras/FontAwsome_LICENSE.txt" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/extras/FontAwsome_LICENSE.txt")
+    install(FILES "../extras/FontAwsome_LICENSE.txt" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/extras/FontAwsome_LICENSE.txt")
 endif ()
 
 # ================== ImGui
@@ -174,21 +176,21 @@ if (RLIMGUI_BUILD_EXAMPLES)
 
     add_executable(simple)
     target_sources(simple
-        PRIVATE examples/simple.cpp
+                   PRIVATE ../examples/simple.cpp
     )
     target_link_libraries(simple PRIVATE rlImGui::rlImGui)
 
 
     add_executable(editor)
     target_sources(editor
-        PRIVATE examples/editor.cpp
+                   PRIVATE ../examples/editor.cpp
     )
     target_link_libraries(editor PRIVATE rlImGui::rlImGui)
 
 
     add_executable(imgui_style_example)
     target_sources(imgui_style_example
-        PRIVATE examples/imgui_style_example.cpp
+                   PRIVATE ../examples/imgui_style_example.cpp
     )
     target_link_libraries(imgui_style_example PRIVATE rlImGui::rlImGui)
 
@@ -196,7 +198,7 @@ if (RLIMGUI_BUILD_EXAMPLES)
     # Auto fetch does not download ImGui Docking branch
     add_executable(docking_example)
     target_sources(docking_example
-        PRIVATE examples/docking_example.cpp
+                   PRIVATE ../examples/docking_example.cpp
     )
     target_link_libraries(docking_example PRIVATE rlImGui::rlImGui)
 
@@ -204,8 +206,8 @@ if (RLIMGUI_BUILD_EXAMPLES)
     if (NOT NO_FONT_AWESOME)
     add_executable(asset_browser)
     target_sources(asset_browser
-        PRIVATE examples/asset_browser/main.cpp examples/asset_browser/asset_browser.cpp examples/asset_browser/imgui_utils.cpp examples/asset_browser/item_views.cpp
-            examples/asset_browser/asset_browser.h examples/asset_browser/imgui_utils.h examples/asset_browser/item_view.h
+                   PRIVATE ../examples/asset_browser/main.cpp ../examples/asset_browser/asset_browser.cpp ../examples/asset_browser/imgui_utils.cpp ../examples/asset_browser/item_views.cpp
+                   ../examples/asset_browser/asset_browser.h ../examples/asset_browser/imgui_utils.h ../examples/asset_browser/item_view.h
     )
     target_link_libraries(asset_browser PRIVATE rlImGui::rlImGui)
     endif ()
