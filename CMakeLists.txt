@@ -8,8 +8,44 @@ option(NO_FONT_AWESOME "Do not use Font Awesome" OFF)
 include(FetchContent)
 include(GNUInstallDirs)
 
+# ================== rlImGui
+if (BUILD_LIBTYPE_SHARED)
+    add_library(rlImGui SHARED)
+    target_compile_definitions(rlImGui
+                           PRIVATE $<BUILD_INTERFACE:BUILD_LIBTYPE_SHARED>
+                           INTERFACE $<INSTALL_INTERFACE:USE_LIBTYPE_SHARED>
+    )
+    if (WIN32)
+        target_compile_definitions(rlImGui INTERFACE "IMGUI_API=__declspec(dllimport)")
+    endif ()
+else ()
+    add_library(rlImGui STATIC)
+endif ()
+add_library(rlImGui::rlImGui ALIAS rlImGui)
+set_target_properties(rlImGui PROPERTIES EXPORT_NAME "rlImGui")
+
+target_sources(rlImGui
+    PUBLIC
+        FILE_SET rlImGui_headers
+            TYPE HEADERS
+            FILES rlImGui.h rlImGuiColors.h imgui_impl_raylib.h
+    PRIVATE
+        rlImGui.cpp
+)
+
+if (NO_FONT_AWESOME)
+    target_compile_definitions(rlImGui PUBLIC "NO_FONT_AWESOME")
+else ()
+    target_sources(rlImGui
+        PUBLIC
+            FILE_SET rlImGui_config
+               TYPE HEADERS
+               FILES extras/IconsFontAwesome6.h extras/FA6FreeSolidFontData.h
+    )
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/extras/FontAwsome_LICENSE.txt" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/extras/FontAwsome_LICENSE.txt")
+endif ()
+
 # ================== ImGui
-set(fetched_imgui 0)
 find_package(imgui QUIET)
 if (NOT imgui_FOUND)
     message(STATUS "Fetching imgui")
@@ -36,11 +72,25 @@ if (NOT imgui_FOUND)
         ${imgui_SOURCE_DIR}/imstb_textedit.h
         ${imgui_SOURCE_DIR}/imstb_truetype.h
     )
-    set(fetched_imgui 1)
+
+    target_sources(rlImGui
+        PUBLIC
+            FILE_SET imgui_headers
+                TYPE HEADERS
+                FILES ${imgui_headers}
+                BASE_DIRS ${imgui_SOURCE_DIR}
+        PRIVATE
+            ${imgui_sources}
+    )
+    target_include_directories(rlImGui
+                               PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>
+    )
+else ()
+    target_link_libraries(rlImGui PUBLIC imgui::imgui)
+    set(IMGUI_DEPENDENCY_CONFIG "find_dependency(imgui REQUIRED)\n")
 endif()
 
 # ================== raylib
-set(fetched_raylib 0)
 find_package(raylib QUIET)
 if (NOT raylib_FOUND)
     message(STATUS "Fetching raylib")
@@ -57,65 +107,6 @@ if (NOT raylib_FOUND)
     list(FILTER RAYLIB_HEADERS INCLUDE REGEX "\\.h$")
     list(TRANSFORM RAYLIB_HEADERS PREPEND ${raylib_SOURCE_DIR}/src/)
 
-    set(fetched_raylib 1)
-endif ()
-
-# ================== rlImGui
-if (BUILD_LIBTYPE_SHARED)
-    add_library(rlImGui SHARED)
-    target_compile_definitions(rlImGui
-                           PRIVATE $<BUILD_INTERFACE:BUILD_LIBTYPE_SHARED>
-                           INTERFACE $<INSTALL_INTERFACE:USE_LIBTYPE_SHARED>
-    )
-    if (WIN32)
-        target_compile_definitions(rlImGui INTERFACE "IMGUI_API=__declspec(dllimport)")
-    endif ()
-else ()
-    add_library(rlImGui STATIC)
-endif ()
-add_library(rlImGui::rlImGui ALIAS rlImGui)
-set_target_properties(rlImGui PROPERTIES EXPORT_NAME "rlImGui")
-
-target_sources(rlImGui
-    PUBLIC
-        FILE_SET rlImGui_headers
-            TYPE HEADERS
-            FILES rlImGui.h rlImGuiColors.h imgui_impl_raylib.h
-    PRIVATE
-        rlImGui.cpp
-)
-if (BUILD_LIBTYPE_SHARED)
-    set_property(TARGET raylib PROPERTY POSITION_INDEPENDENT_CODE ON)
-    if (MSVC)
-        target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:raylib>")
-    else ()
-        target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive raylib -Wl,--no-whole-archive)
-    endif ()
-endif ()
-
-if (NOT fetched_imgui)
-    target_link_libraries(rlImGui PUBLIC imgui::imgui)
-    set(IMGUI_DEPENDENCY_CONFIG "find_dependency(imgui REQUIRED)\n")
-else ()
-    target_sources(rlImGui
-        PUBLIC
-            FILE_SET imgui_headers
-                TYPE HEADERS
-                FILES ${imgui_headers}
-                BASE_DIRS ${imgui_SOURCE_DIR}
-        PRIVATE
-            ${imgui_sources}
-    )
-    target_include_directories(rlImGui
-                               PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>
-    )
-endif ()
-if (NOT fetched_raylib)
-    target_link_libraries(rlImGui PUBLIC raylib)
-    set(RAYLIB_DEPENDENCY_CONFIG "find_dependency(raylib REQUIRED)\n")
-else ()
-    target_link_libraries(rlImGui PRIVATE raylib)
-    set(RAYLIB_DEPENDENCY_CONFIG "set(ENV{PKG_CONFIG_PATH} \"\${CMAKE_CURRENT_LIST_DIR}/../../pkgconfig;\$ENV{PKG_CONFIG_PATH}\")\nfind_dependency(raylib REQUIRED)")
     target_include_directories(rlImGui
                                PUBLIC $<BUILD_INTERFACE:${raylib_SOURCE_DIR}/src>
     )
@@ -126,20 +117,22 @@ else ()
                FILES ${RAYLIB_HEADERS}
                BASE_DIRS ${raylib_SOURCE_DIR}/src
     )
-endif ()
 
-if (NO_FONT_AWESOME)
-    target_compile_definitions(rlImGui PUBLIC "NO_FONT_AWESOME")
+    if (BUILD_LIBTYPE_SHARED)
+        set_property(TARGET raylib PROPERTY POSITION_INDEPENDENT_CODE ON)
+        if (MSVC)
+            target_link_options(rlImGui PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:raylib>")
+        else ()
+            target_link_libraries(rlImGui PRIVATE -Wl,--whole-archive raylib -Wl,--no-whole-archive)
+        endif ()
+    endif ()
+
 else ()
-    target_sources(rlImGui
-        PUBLIC
-            FILE_SET rlImGui_config
-               TYPE HEADERS
-               FILES extras/IconsFontAwesome6.h extras/FA6FreeSolidFontData.h
-    )
-    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/extras/FontAwsome_LICENSE.txt" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/extras/FontAwsome_LICENSE.txt")
+    target_link_libraries(rlImGui PUBLIC raylib)
+    set(RAYLIB_DEPENDENCY_CONFIG "find_dependency(raylib REQUIRED)\n")
 endif ()
 
+# ================== install rlImGui
 install(TARGETS rlImGui
         EXPORT rlImGuiTargets
         ARCHIVE DESTINATION lib
@@ -200,6 +193,7 @@ if (RLIMGUI_BUILD_EXAMPLES)
     target_link_libraries(imgui_style_example PRIVATE rlImGui::rlImGui)
 
 
+    # Auto fetch does not download ImGui Docking branch
     add_executable(docking_example)
     target_sources(docking_example
         PRIVATE examples/docking_example.cpp
